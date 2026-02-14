@@ -1,0 +1,59 @@
+name: Build ServersideQoL DLL (CI)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Prepare libs folder
+      run: |
+        if (!(Test-Path libs)) {
+          New-Item -ItemType Directory -Path libs
+        }
+
+    - name: Download BepInEx
+      run: |
+        Invoke-WebRequest `
+          https://github.com/BepInEx/BepInEx/releases/download/v5.4.21/BepInEx_x64_5.4.21.0.zip `
+          -OutFile bepinex.zip
+        Expand-Archive bepinex.zip -DestinationPath bepinex
+
+        Copy-Item bepinex/BepInEx/core/BepInEx.dll libs/
+        Copy-Item bepinex/BepInEx/core/0Harmony.dll libs/
+
+    - name: Download Valheim Dedicated Server
+      run: |
+        Invoke-WebRequest https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip -OutFile steamcmd.zip
+        Expand-Archive steamcmd.zip -DestinationPath steamcmd
+
+        steamcmd/steamcmd.exe `
+          +login anonymous `
+          +force_install_dir valheim `
+          +app_update 896660 validate `
+          +quit
+
+        Copy-Item valheim/valheim_server_Data/Managed/UnityEngine.dll libs/
+        Copy-Item valheim/valheim_server_Data/Managed/assembly_valheim.dll libs/
+
+    - name: Build (CI configuration)
+      run: |
+        dotnet build ValheimServersideQoL/Valheim.ServersideQoL.csproj -c CI
+
+    - name: Upload DLL artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Valheim.ServersideQoL-DLL
+        path: ValheimServersideQoL/bin/CI/netstandard2.1/*.dll
