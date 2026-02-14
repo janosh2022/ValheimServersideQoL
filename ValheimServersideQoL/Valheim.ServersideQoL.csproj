@@ -1,130 +1,177 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- ===================== -->
+  <!-- Global configuration -->
+  <!-- ===================== -->
   <PropertyGroup>
-    <!--<TargetFramework>net48</TargetFramework>-->
     <TargetFramework>netstandard2.1</TargetFramework>
+    <Configurations>Debug;Release;CI</Configurations>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <!--<DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>-->
-	<DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>	  
-	<MinVerTagPrefix>v</MinVerTagPrefix>
-	<MinVerDefaultPreReleaseIdentifiers>beta.0</MinVerDefaultPreReleaseIdentifiers>
+
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>beta.0</MinVerDefaultPreReleaseIdentifiers>
+
+    <!-- Local Valheim install (used ONLY for Debug/Release) -->
     <ValheimDir>$(USERPROFILE)\Games\valheim\</ValheimDir>
   </PropertyGroup>
-	
-  <!--<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>	  
-  </PropertyGroup>-->
 
+  <!-- ===================== -->
+  <!-- NuGet -->
+  <!-- ===================== -->
   <ItemGroup>
-	<PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- Project references -->
+  <!-- ===================== -->
   <ItemGroup>
-    <ProjectReference Include="..\ValheimServersideQoL.CodeAnalysis\Valheim.ServersideQoL.CodeAnalysis.csproj" OutputItemType="Analyzer" PrivateAssets="all" />
+    <ProjectReference Include="..\ValheimServersideQoL.CodeAnalysis\Valheim.ServersideQoL.CodeAnalysis.csproj"
+                      OutputItemType="Analyzer"
+                      PrivateAssets="all" />
     <ProjectReference Include="..\ValheimServersideQoL.YamlDotNet\YamlDotNet\Valheim.ServersideQoL.YamlDotNet.csproj" />
   </ItemGroup>
-	
+
+  <!-- ===================== -->
+  <!-- Exclude private dependencies folder -->
+  <!-- ===================== -->
   <ItemGroup>
     <Compile Remove="Dependencies\**" />
-	<None Include="Dependencies\**" />
+    <None Include="Dependencies\**" />
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- File nesting -->
+  <!-- ===================== -->
   <ItemGroup>
-    <Compile Update="**/*.*.cs" DependentUpon="$([System.IO.Path]::GetFileNameWithoutExtension(%(Filename))).cs" />
+    <Compile Update="**/*.*.cs"
+             DependentUpon="$([System.IO.Path]::GetFileNameWithoutExtension(%(Filename))).cs" />
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- Required references (local builds) -->
+  <!-- ===================== -->
   <ItemGroup>
     <RequiredReference Include="assembly_utils">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\assembly_utils.dll</HintPath>
-    <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="assembly_valheim">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\assembly_valheim.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="assembly_guiutils">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\assembly_guiutils.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="BepInEx">
       <HintPath>$(ValheimDir)BepInEx\core\BepInEx.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="UnityEngine">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="UnityEngine.CoreModule">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="0Harmony">
       <HintPath>$(ValheimDir)BepInEx\core\0Harmony.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="Mono.Cecil">
       <HintPath>$(ValheimDir)BepInEx\core\Mono.Cecil.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="MonoMod.Utils">
       <HintPath>$(ValheimDir)BepInEx\core\MonoMod.Utils.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
     <RequiredReference Include="SoftReferenceableAssets">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\SoftReferenceableAssets.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </RequiredReference>
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-    <Reference Include="@(RequiredReference)" HintPath="Dependencies\%(RequiredReference.HintPath.Filename)" />
+
+  <!-- ===================== -->
+  <!-- Release build (uses Dependencies/, private upstream only) -->
+  <!-- ===================== -->
+  <ItemGroup Condition="'$(Configuration)' != 'Debug' and '$(Configuration)' != 'CI'">
+    <Reference Include="@(RequiredReference)"
+               HintPath="Dependencies\%(RequiredReference.HintPath.Filename)" />
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- Debug build (local dev) -->
+  <!-- ===================== -->
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-  <Reference Include="@(RequiredReference)" />
+    <Reference Include="@(RequiredReference)" />
+
     <Reference Include="BepInEx.Harmony">
       <HintPath>$(ValheimDir)BepInEx\core\BepInEx.Harmony.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx.Preloader">
       <HintPath>$(ValheimDir)BepInEx\core\BepInEx.Preloader.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="HarmonyXInterop">
       <HintPath>$(ValheimDir)BepInEx\core\HarmonyXInterop.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Mdb">
       <HintPath>$(ValheimDir)BepInEx\core\Mono.Cecil.Mdb.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Pdb">
       <HintPath>$(ValheimDir)BepInEx\core\Mono.Cecil.Pdb.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks">
       <HintPath>$(ValheimDir)BepInEx\core\Mono.Cecil.Rocks.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="MonoMod.RuntimeDetour">
       <HintPath>$(ValheimDir)BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-      <Private>False</Private>
-	</Reference>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Splatform">
       <HintPath>$(ValheimDir)valheim_server_Data\Managed\Splatform.dll</HintPath>
-      <Private>False</Private>
+      <Private>false</Private>
     </Reference>
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- CI build (GitHub Actions) -->
+  <!-- ===================== -->
+  <ItemGroup Condition="'$(Configuration)' == 'CI'">
+    <Reference Include="BepInEx">
+      <HintPath>..\libs\BepInEx.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\libs\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\libs\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_valheim">
+      <HintPath>..\libs\assembly_valheim.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- ===================== -->
+  <!-- Content -->
+  <!-- ===================== -->
   <ItemGroup>
     <None Update="icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -137,9 +184,12 @@
     </None>
   </ItemGroup>
 
+  <!-- ===================== -->
+  <!-- Build info generation -->
+  <!-- ===================== -->
   <Target Name="GenerateBuildInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
-	  <VersionNumber>$(Version.Split('-')[0])</VersionNumber>
+      <VersionNumber>$(Version.Split('-')[0])</VersionNumber>
       <BuildInfoFile>$(IntermediateOutputPath)BuildInfo.cs</BuildInfoFile>
       <MyTextLines>
 namespace $(RootNamespace)%3B
@@ -152,28 +202,43 @@ partial class Main
     const string ConfigMarkdownPath = @"$(ProjectDir)Configuration.md"%3B
 #endif
 }
-      </MyTextLines> 
+      </MyTextLines>
     </PropertyGroup>
-    
-    <WriteLinesToFile File="$(BuildInfoFile)" Overwrite="true" Lines="$(MyTextLines)" />
+
+    <WriteLinesToFile File="$(BuildInfoFile)"
+                      Overwrite="true"
+                      Lines="$(MyTextLines)" />
 
     <ItemGroup>
       <Compile Include="$(BuildInfoFile)" />
     </ItemGroup>
   </Target>
-  
-  <Target Name="CopyDependencies" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Debug'">
+
+  <!-- ===================== -->
+  <!-- Copy deps (Debug only) -->
+  <!-- ===================== -->
+  <Target Name="CopyDependencies"
+          AfterTargets="AfterBuild"
+          Condition="'$(Configuration)' == 'Debug'">
     <ItemGroup>
       <FilesToDelete Include="Dependencies/**/*.dll" />
     </ItemGroup>
     <Delete Files="@(FilesToDelete)" />
-    <Copy SourceFiles="%(RequiredReference.HintPath)" DestinationFolder="Dependencies" />
+    <Copy SourceFiles="%(RequiredReference.HintPath)"
+          DestinationFolder="Dependencies" />
   </Target>
 
-  <Target Name="CreatePackage" AfterTargets="AfterBuild">	
-	<Exec Command="powershell -ExecutionPolicy ByPass -Command &quot;Add-Content -LiteralPath '$(OutDir)README.md' -Encoding UTF8 -Value (Get-Content Configuration.md -Encoding UTF8)&quot;" />	  
+  <!-- ===================== -->
+  <!-- Package (not in CI) -->
+  <!-- ===================== -->
+  <Target Name="CreatePackage"
+          AfterTargets="AfterBuild"
+          Condition="'$(Configuration)' != 'CI'">
+    <Exec Command="powershell -ExecutionPolicy ByPass -Command &quot;Add-Content -LiteralPath '$(OutDir)README.md' -Encoding UTF8 -Value (Get-Content Configuration.md -Encoding UTF8)&quot;" />
     <Exec Command="powershell -ExecutionPolicy ByPass -File Write-Manifest.ps1 -Path $(OutDir)manifest.json -Version $(Version) -VersionNumber $(VersionNumber)" />
-    <ZipDirectory SourceDirectory="$(OutDir)" DestinationFile="$(OutDir)..\$(TargetName).zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(OutDir)"
+                  DestinationFile="$(OutDir)..\$(TargetName).zip"
+                  Overwrite="true" />
   </Target>
 
 </Project>
