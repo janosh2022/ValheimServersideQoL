@@ -1,31 +1,37 @@
-name: Build ServersideQoL
+name: Build ServersideQoL (project-only)
 
 on:
-  workflow_dispatch:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup .NET 6 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
+    - name: Show repo root (for debugging)
+      run: |
+        Write-Host "=== repo root listing ==="
+        Get-ChildItem -Force -Recurse -Depth 2 | Select-Object FullName, Mode, Length
 
-      - name: Restore dependencies
-        run: dotnet restore
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
 
-      - name: Build
-        run: dotnet build Valheim.ServersideQoL.csproj -c Release --no-restore
+    - name: Restore only main project
+      run: dotnet restore ./ValheimServersideQoL/Valheim.ServersideQoL.csproj
 
-      - name: Upload DLL
-        uses: actions/upload-artifact@v4
-        with:
-          name: Valheim.ServersideQoL.dll
-          path: bin/Release/**/Valheim.ServersideQoL.dll
+    - name: Build only main project (CI configuration)
+      run: dotnet build ./ValheimServersideQoL/Valheim.ServersideQoL.csproj -c CI --no-restore
+
+    - name: Upload DLL if produced
+      uses: actions/upload-artifact@v4
+      with:
+        name: Valheim.ServersideQoL-DLL
+        path: ValheimServersideQoL/bin/CI/netstandard2.1/*.dll
